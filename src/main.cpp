@@ -1,22 +1,18 @@
 // Copyright 2022 UNN-IASR
 #include <iostream>
-#include "CoffeeMachine.h"
+
+#include "Automata.h"
 
 int main() {
-	CoffeeMachine* myMachine = new CoffeeMachine(std::cout);
-
-	myMachine->activate();
-	myMachine->showMenu();
-
-	myMachine->acceptPayment(20);
-	myMachine->getDepositAmount();
-
-	myMachine->checkStatus();
-	myMachine->makeSelection(2);
-
-	myMachine->acceptPayment(100);
-	myMachine->makeSelection(2);
-
-	delete myMachine;
-	return 0;
+  Automata* automata = new Automata(std::cout);
+  automata->on();
+  automata->getMenu();
+  automata->getCashe();
+  automata->coin(20);
+  automata->getCashe();
+  automata->getState();
+  automata->choice(2);
+  automata->coin(100);
+  automata->choice(2);
+  return 0;
 }
