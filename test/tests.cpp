@@ -1,140 +1,144 @@
 // Copyright 2022 GHA Test Team
 #include <gtest/gtest.h>
+#include <utility>
+#include <iostream>
 #include <sstream>
-#include "CoffeeMachine.h"
+#include <string>
 
-TEST(CoffeeMachineTests, InitialStateCheck) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    EXPECT_EQ(machine.checkStatus(), MachineState::POWER_OFF);
-    EXPECT_TRUE(output.str().find("POWER_OFF") != std::string::npos);
+#include "Automata.h"
+
+TEST(task1, test1) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  ASSERT_EQ(STATES::OFF, automata->getState());
+  EXPECT_EQ(strs.str(), "OFF\n");
 }
 
-TEST(CoffeeMachineTests, SuccessfulActivation) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    EXPECT_EQ(machine.checkStatus(), MachineState::READY);
-    EXPECT_TRUE(output.str().find("activated") != std::string::npos);
+TEST(task1, test2) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  ASSERT_EQ(STATES::WAIT, automata->getState());
+  EXPECT_EQ(strs.str(), "WAIT\n");
 }
 
-TEST(CoffeeMachineTests, DoubleActivation) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.activate(); // Повторная активация
-    EXPECT_EQ(machine.checkStatus(), MachineState::READY);
+TEST(task1, test3) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->off();
+  ASSERT_EQ(STATES::OFF, automata->getState());
+  EXPECT_EQ(strs.str(), "OFF\n");
 }
 
-TEST(CoffeeMachineTests, Deactivation) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.deactivate();
-    EXPECT_EQ(machine.checkStatus(), MachineState::POWER_OFF);
-    EXPECT_TRUE(output.str().find("deactivated") != std::string::npos);
+TEST(task1, test4) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->on();
+  ASSERT_EQ(STATES::WAIT, automata->getState());
+  EXPECT_EQ(strs.str(), "WAIT\n");
 }
 
-TEST(CoffeeMachineTests, MenuDisplayWhenOff) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    auto menu = machine.showMenu();
-    EXPECT_TRUE(menu.empty());
-    EXPECT_TRUE(output.str().empty());
+TEST(task1, test5) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->off();
+  ASSERT_EQ(STATES::OFF, automata->getState());
+  EXPECT_EQ(strs.str(), "OFF\n");
 }
 
-TEST(CoffeeMachineTests, MenuDisplayWhenOn) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    auto menu = machine.showMenu();
-    EXPECT_EQ(menu.size(), 5);
-    EXPECT_TRUE(output.str().find("Espresso") != std::string::npos);
+TEST(task2, test1) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->coin(20);
+  STATES result = automata->getState();
+  ASSERT_EQ(STATES::ACCEPT, result);
+  std::pair<CHOISE_STATES, double> cookResult = automata->choice(2);
+  ASSERT_EQ(CHOISE_STATES::NOT_ENOUGHT_MONEY, cookResult.first);
+  EXPECT_EQ(20, cookResult.second);
 }
 
-TEST(CoffeeMachineTests, AcceptValidPayment) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.acceptPayment(50);
-    EXPECT_EQ(machine.getDepositAmount(), 50);
-    EXPECT_EQ(machine.checkStatus(), MachineState::PAYMENT);
+TEST(task2, test2) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  std::pair<CHOISE_STATES, double> cookResult = automata->choice(0);
+  ASSERT_EQ(CHOISE_STATES::INACCESSIBLE, cookResult.first);
+  EXPECT_EQ(0, cookResult.second);
 }
 
-TEST(CoffeeMachineTests, AcceptInvalidPayment) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.acceptPayment(-10);
-    EXPECT_EQ(machine.getDepositAmount(), 0);
-    EXPECT_TRUE(output.str().find("Invalid") != std::string::npos);
+TEST(task2, test3) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->coin(100);
+  std::pair<CHOISE_STATES, double> cookResult = automata->choice(2);
+  ASSERT_EQ(CHOISE_STATES::OK, cookResult.first);
+  EXPECT_EQ(65, cookResult.second);
 }
 
-TEST(CoffeeMachineTests, PaymentWhenOff) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.acceptPayment(100);
-    EXPECT_EQ(machine.getDepositAmount(), 0);
+TEST(task2, test4) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->coin(20);
+  std::pair<CHOISE_STATES, double> cookResult = automata->choice(-2);
+  ASSERT_EQ(CHOISE_STATES::INVALID_ITEM, cookResult.first);
+  EXPECT_EQ(20, cookResult.second);
 }
 
-TEST(CoffeeMachineTests, SuccessfulSelection) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.acceptPayment(100);
-    auto result = machine.makeSelection(2); // Cappuccino
-    EXPECT_EQ(result.first, SelectionResult::SUCCESS);
-    EXPECT_EQ(result.second, 65);
-    EXPECT_TRUE(output.str().find("Preparing") != std::string::npos);
+TEST(task2, test5) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->coin(-10);
+  ASSERT_EQ(0, automata->getCashe());
+  EXPECT_EQ(STATES::WAIT, automata->getState());
 }
 
-TEST(CoffeeMachineTests, InsufficientFunds) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.acceptPayment(20);
-    auto result = machine.makeSelection(2); // Cappuccino costs 35
-    EXPECT_EQ(result.first, SelectionResult::INSUFFICIENT_FUNDS);
-    EXPECT_EQ(result.second, 20);
+TEST(task2, test6) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->coin(10);
+  automata->coin(-10);
+  ASSERT_EQ(10, automata->getCashe());
+  EXPECT_EQ(STATES::ACCEPT, automata->getState());
 }
 
-TEST(CoffeeMachineTests, InvalidSelection) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.acceptPayment(50);
-    auto result = machine.makeSelection(10); // Несуществующий напиток
-    EXPECT_EQ(result.first, SelectionResult::INVALID_SELECTION);
-    EXPECT_EQ(result.second, 50);
+TEST(task2, test7) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->coin(10);
+  ASSERT_EQ(0, automata->getCashe());
+  EXPECT_EQ(STATES::OFF, automata->getState());
 }
 
-TEST(CoffeeMachineTests, SelectionWithoutPayment) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    auto result = machine.makeSelection(0);
-    EXPECT_EQ(result.first, SelectionResult::UNAVAILABLE);
-    EXPECT_EQ(result.second, 0);
+TEST(task2, test8) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  automata->coin(100);
+  automata->choice(2);
+  automata->coin(1000);
+  ASSERT_EQ(1000, automata->getCashe());
+  EXPECT_EQ(STATES::ACCEPT, automata->getState());
 }
 
-TEST(CoffeeMachineTests, FullRefund) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.acceptPayment(75);
-    double refund = machine.refundPayment();
-    EXPECT_EQ(refund, 75);
-    EXPECT_EQ(machine.getDepositAmount(), 0);
-    EXPECT_EQ(machine.checkStatus(), MachineState::READY);
+TEST(task3, test1) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  size_t result = (automata->getMenu()).size();
+  ASSERT_EQ(0, result);
+  EXPECT_EQ(strs.str(), "");
 }
 
-TEST(CoffeeMachineTests, BrewingProcess) {
-    std::stringstream output;
-    CoffeeMachine machine(output);
-    machine.activate();
-    machine.acceptPayment(50);
-    machine.makeSelection(3); // Latte
-    // Проверяем сообщения о процессе приготовления
-    EXPECT_TRUE(output.str().find("Preparing") != std::string::npos);
-    EXPECT_TRUE(output.str().find("Enjoy") != std::string::npos);
+TEST(task3, test2) {
+  std::stringstream strs;
+  Automata* automata = new Automata(strs);
+  automata->on();
+  size_t result = (automata->getMenu()).size();
+  EXPECT_EQ(5, result);
 }
