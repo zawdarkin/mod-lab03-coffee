@@ -1,166 +1,159 @@
 // Copyright 2022 UNN-IASR
-#include "CoffeeMachine.h"
+#include "Automata.h"
 
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <vector>
+#include <utility>
+#include <string>
 
-CoffeeMachine::CoffeeMachine(std::ostream& os) : display{ os } {
-    beverageList.push_back(Beverage{ "Espresso", 15 });
-    beverageList.push_back(Beverage{ "Americano", 20 });
-    beverageList.push_back(Beverage{ "Cappuccino", 35 });
-    beverageList.push_back(Beverage{ "Latte", 50 });
-    beverageList.push_back(Beverage{ "Macchiato", 65 });
+Automata::Automata(std::ostream& os) : stream{os} {
+  menu.push_back(menuItem{"Espresso", 15});
+  menu.push_back(menuItem{"Americano", 20});
+  menu.push_back(menuItem{"Cappuccino", 35});
+  menu.push_back(menuItem{"Latte", 50});
+  menu.push_back(menuItem{"Macchiato", 65});
 }
 
-CoffeeMachine::CoffeeMachine(std::ostream& os, std::vector<Beverage> customMenu)
-    : beverageList{ customMenu }, display{ os } {}
+Automata::Automata(std::ostream& os, std::vector<menuItem> customMenu)
+    : menu{customMenu}, stream{os} {}
 
-bool CoffeeMachine::isOperational() const {
-    return currentMode != MachineState::POWER_OFF;
+void Automata::on() {
+  if (state == STATES::OFF) state = STATES::WAIT;
 }
 
-void CoffeeMachine::displayMessage(const std::string& msg) const {
-    display << msg << "\n";
+void Automata::off() {
+  if (state != STATES::OFF) {
+    state = STATES::OFF;
+    cash = 0;
+  }
 }
 
-void CoffeeMachine::activate() {
-    if (currentMode == MachineState::POWER_OFF) {
-        currentMode = MachineState::READY;
-        displayMessage("Machine activated");
+void Automata::coin(double amount) {
+  if (state == STATES::WAIT || state == STATES::ACCEPT) {
+    if (amount <= 0) {
+      stream << "invalid amount value\n";
+      return;
     }
+    singleCash += amount;
+    state = STATES::ACCEPT;
+  }
 }
 
-void CoffeeMachine::deactivate() {
-    if (isOperational()) {
-        currentMode = MachineState::POWER_OFF;
-        totalRevenue = 0;
-        displayMessage("Machine deactivated");
+std::vector<menuItem> Automata::getMenu() {
+  if (state != STATES::OFF) {
+    for (menuItem item : menu) {
+      stream << item.name << ": " << item.price << "\n";
     }
+    return menu;
+  }
+  return std::vector<menuItem>();
 }
 
-void CoffeeMachine::acceptPayment(double payment) {
-    if (!isOperational()) return;
+double Automata::getCashe() {
+  if (state != STATES::OFF) {
+    stream << "Amount contributed: " << singleCash << "\n";
+    return singleCash;
+  }
+  return 0;
+}
 
-    if (currentMode == MachineState::READY || currentMode == MachineState::PAYMENT) {
-        if (payment > 0) {
-            customerDeposit += payment;
-            currentMode = MachineState::PAYMENT;
-            displayMessage("Payment accepted");
-        }
-        else {
-            displayMessage("Invalid payment amount");
-        }
+STATES Automata::getState() {
+  switch (state) {
+    case STATES::OFF:
+      stream << "OFF\n";
+      break;
+    case STATES::WAIT:
+      stream << "WAIT\n";
+      break;
+    case STATES::ACCEPT:
+      stream << "ACCEPT\n";
+      break;
+    case STATES::CHECK:
+      stream << "CHECK\n";
+      break;
+    case STATES::COOK:
+      stream << "COOK\n";
+      break;
+    default:
+      stream << "UNKNOWN\n";
+      break;
+  }
+  return state;
+}
+
+std::pair<CHOISE_STATES, double> Automata::choice(size_t drinkIndex) {
+  if (state == STATES::ACCEPT) {
+    if (drinkIndex < menu.size()) {
+      state = STATES::CHECK;
+      if (check(drinkIndex)) {
+        cash += menu[drinkIndex].price;
+        singleCash -= menu[drinkIndex].price;
+        double toReturn = singleCash;
+        cook();
+        return printChoiseState(std::pair(CHOISE_STATES::OK, toReturn));
+      } else {
+        return printChoiseState(
+            std::pair(CHOISE_STATES::NOT_ENOUGHT_MONEY, cancel()));
+      }
+    } else {
+      return printChoiseState(std::pair(CHOISE_STATES::INVALID_ITEM, cancel()));
     }
+  }
+  return printChoiseState(std::pair(CHOISE_STATES::INACCESSIBLE, 0));
 }
 
-std::vector<Beverage> CoffeeMachine::showMenu() {
-    if (!isOperational()) return {};
-
-    for (const auto& item : beverageList) {
-        display << item.title << ": " << item.cost << " credits\n";
-    }
-    return beverageList;
+std::pair<CHOISE_STATES, double> Automata::printChoiseState(
+    std::pair<CHOISE_STATES, double> state) {
+  switch (state.first) {
+    case CHOISE_STATES::OK:
+      stream << "OK, change: " << state.second << "\n";
+      break;
+    case CHOISE_STATES::INVALID_ITEM:
+      stream << "INVALID_ITEM, change: " << state.second << "\n";
+      break;
+    case CHOISE_STATES::NOT_ENOUGHT_MONEY:
+      stream << "NOT_ENOUGHT_MONEY, change: " << state.second << "\n";
+      break;
+    case CHOISE_STATES::INACCESSIBLE:
+      stream << "INACCESSIBLE, change: " << state.second << "\n";
+      break;
+    default:
+      stream << "UNKNOWN, change: 0\n";
+      break;
+  }
+  return state;
 }
 
-double CoffeeMachine::getDepositAmount() {
-    if (!isOperational()) return 0;
-
-    display << "Current deposit: " << customerDeposit << "\n";
-    return customerDeposit;
+bool Automata::check(size_t drinkIndex) {
+  if (state == STATES::CHECK) return singleCash >= menu[drinkIndex].price;
+  return false;
 }
 
-MachineState CoffeeMachine::checkStatus() {
-    switch (currentMode) {
-    case MachineState::POWER_OFF:
-        displayMessage("Status: POWER_OFF");
-        break;
-    case MachineState::READY:
-        displayMessage("Status: READY");
-        break;
-    case MachineState::PAYMENT:
-        displayMessage("Status: PAYMENT");
-        break;
-    case MachineState::VERIFICATION:
-        displayMessage("Status: VERIFICATION");
-        break;
-    case MachineState::BREWING:
-        displayMessage("Status: BREWING");
-        break;
-    }
-    return currentMode;
+double Automata::cancel() {
+  if (state != STATES::OFF) {
+    double toReturn = singleCash;
+    singleCash = 0;
+    state = STATES::WAIT;
+    return toReturn;
+  }
+  return 0;
 }
 
-std::pair<SelectionResult, double> CoffeeMachine::makeSelection(size_t index) {
-    if (currentMode != MachineState::PAYMENT) {
-        return handleSelectionOutcome({ SelectionResult::UNAVAILABLE, 0 });
-    }
-
-    if (index >= beverageList.size()) {
-        return handleSelectionOutcome(
-            { SelectionResult::INVALID_SELECTION, refundPayment() });
-    }
-
-    currentMode = MachineState::VERIFICATION;
-    if (verifySelection(index)) {
-        totalRevenue += beverageList[index].cost;
-        customerDeposit -= beverageList[index].cost;
-        double change = customerDeposit;
-        brewBeverage();
-        return handleSelectionOutcome({ SelectionResult::SUCCESS, change });
-    }
-
-    return handleSelectionOutcome(
-        { SelectionResult::INSUFFICIENT_FUNDS, refundPayment() });
-}
-
-std::pair<SelectionResult, double> CoffeeMachine::handleSelectionOutcome(
-    std::pair<SelectionResult, double> outcome) {
-    switch (outcome.first) {
-    case SelectionResult::SUCCESS:
-        display << "Selection successful. Change: " << outcome.second << "\n";
-        break;
-    case SelectionResult::INVALID_SELECTION:
-        display << "Invalid selection. Refund: " << outcome.second << "\n";
-        break;
-    case SelectionResult::INSUFFICIENT_FUNDS:
-        display << "Insufficient funds. Refund: " << outcome.second << "\n";
-        break;
-    case SelectionResult::UNAVAILABLE:
-        display << "Service unavailable\n";
-        break;
-    }
-    return outcome;
-}
-
-bool CoffeeMachine::verifySelection(size_t index) {
-    return currentMode == MachineState::VERIFICATION &&
-        customerDeposit >= beverageList[index].cost;
-}
-
-double CoffeeMachine::refundPayment() {
-    if (!isOperational()) return 0;
-
-    double refund = customerDeposit;
-    customerDeposit = 0;
-    currentMode = MachineState::READY;
-    displayMessage("Payment refunded");
-    return refund;
-}
-
-void CoffeeMachine::brewBeverage() {
-    if (currentMode != MachineState::VERIFICATION) return;
-
-    currentMode = MachineState::BREWING;
-    displayMessage("Preparing your beverage...");
+void Automata::cook() {
+  if (state == STATES::CHECK) {
+    state = STATES::COOK;
+    stream << "Start cooking\n";
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    resetAfterBrewing();
+    finish();
+  }
 }
 
-void CoffeeMachine::resetAfterBrewing() {
-    if (currentMode == MachineState::BREWING) {
-        customerDeposit = 0;
-        currentMode = MachineState::READY;
-        displayMessage("Beverage ready. Enjoy!");
-    }
+void Automata::finish() {
+  if (state == STATES::COOK) {
+    stream << "Finished\n";
+    singleCash = 0;
+    state = STATES::WAIT;
+  }
 }
