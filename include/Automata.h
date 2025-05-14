@@ -1,45 +1,48 @@
 // Copyright 2022 UNN-IASR
-#ifndef INCLUDE_AUTOMATA_H_  // NOLINT
-#define INCLUDE_AUTOMATA_H_
+#ifndef VENDING_MACHINE_H
+#define VENDING_MACHINE_H
 
 #include <string>
 #include <utility>
 #include <vector>
+#include <ostream>
 
-enum class STATES { OFF, WAIT, ACCEPT, CHECK, COOK };
-enum class CHOISE_STATES { OK, INVALID_ITEM, NOT_ENOUGHT_MONEY, INACCESSIBLE };
+namespace BeverageMachine {
+    enum class MachineState { POWER_OFF, READY, PAYMENT, VERIFICATION, BREWING };
+    enum class SelectionStatus { SUCCESS, INVALID_SELECTION, INSUFFICIENT_FUNDS, UNAVAILABLE };
 
-struct menuItem {
-  std::string name;
-  double price;
-};
+    struct DrinkOption {
+        std::string title;
+        double cost;
+    };
 
-class Automata {
- private:
-  double cash = 0;
-  double singleCash = 0;
-  std::ostream& stream;
-  std::vector<menuItem> menu;
-  STATES state = STATES::OFF;
+    class BeverageVendor {
+    private:
+        double totalDeposited = 0;
+        double currentPayment = 0;
+        std::ostream& output;
+        std::vector<DrinkOption> drinkList;
+        MachineState currentMode = MachineState::POWER_OFF;
 
-  bool check(size_t drinkIndex);
-  void cook();
-  void finish();
-  std::pair<CHOISE_STATES, double> printChoiseState(
-      std::pair<CHOISE_STATES, double> state);
+        bool verifyPurchase(size_t selection);
+        void startBrewing();
+        void completeTransaction();
+        std::pair<SelectionStatus, double> displaySelectionResult(
+            std::pair<SelectionStatus, double> result);
 
- public:
-  explicit Automata(std::ostream& os);
-  Automata(std::ostream& os, std::vector<menuItem> customMenu);
+    public:
+        explicit BeverageVendor(std::ostream& os);
+        BeverageVendor(std::ostream& os, std::vector<DrinkOption> customDrinks);
 
-  void on();
-  void off();
-  void coin(double amount);
-  std::vector<menuItem> getMenu();
-  double getCashe();
-  STATES getState();
-  std::pair<CHOISE_STATES, double> choice(size_t drinkIndex);
-  double cancel();
-};
+        void powerOn();
+        void powerOff();
+        void insertMoney(double value);
+        std::vector<DrinkOption> showMenu();
+        double getCurrentBalance();
+        MachineState getCurrentState();
+        std::pair<SelectionStatus, double> makeSelection(size_t drinkIndex);
+        double abortTransaction();
+    };
+}
 
-#endif  // INCLUDE_AUTOMATA_H_
+#endif // INCLUDE_AUTOMATA_H_
