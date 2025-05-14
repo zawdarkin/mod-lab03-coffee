@@ -92,13 +92,15 @@ std::pair<CHOISE_STATES, double> Automata::choice(size_t drinkIndex) {
                 currentDeposit -= drinkMenu[drinkIndex].cost;
                 double change = currentDeposit;
                 prepareDrink();
-                return processChoiceResult(std::pair(CHOISE_STATES::OK, change));
-            } else {
                 return processChoiceResult(
-                    std::pair(CHOISE_STATES::NOT_ENOUGHT_MONEY, cancel()));
+                    std::pair(CHOISE_STATES::OK, change));
+            } else {
+                return processChoiceResult(std::pair(
+                    CHOISE_STATES::NOT_ENOUGHT_MONEY, cancel()));
             }
         } else {
-            return processChoiceResult(std::pair(CHOISE_STATES::INVALID_ITEM, cancel()));
+            return processChoiceResult(
+                std::pair(CHOISE_STATES::INVALID_ITEM, cancel()));
         }
     }
     return processChoiceResult(std::pair(CHOISE_STATES::INACCESSIBLE, 0));
