@@ -16,17 +16,17 @@ struct DrinkItem {
 
 class Automata {
  private:
-    double totalRevenue = 0; 
-    double currentDeposit = 0; 
-    std::ostream& outputStream; 
-    std::vector<DrinkItem> drinkMenu;  
-    STATES currentMode = STATES::OFF;  
+    double totalRevenue = 0;
+    double currentDeposit = 0;
+    std::ostream& outputStream;
+    std::vector<DrinkItem> drinkMenu;
+    STATES currentMode = STATES::OFF;
 
-    bool validateOrder(size_t itemIndex);  
-    void prepareDrink();  
-    void completeService();  
+    bool validateOrder(size_t itemIndex);
+    void prepareDrink();
+    void completeService();
     std::pair<CHOISE_STATES, double> processChoiceResult(
-        std::pair<CHOISE_STATES, double> result);  
+        std::pair<CHOISE_STATES, double> result);
 
  public:
     explicit Automata(std::ostream& os);
@@ -42,4 +42,4 @@ class Automata {
     double cancel();
 };
 
-#endif 
+#endif
