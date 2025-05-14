@@ -116,7 +116,8 @@ std::pair<CHOISE_STATES, double> Automata::processChoiceResult(
             outputStream << "INVALID_ITEM, change: " << result.second << "\n";
             break;
         case CHOISE_STATES::NOT_ENOUGHT_MONEY:
-            outputStream << "NOT_ENOUGHT_MONEY, change: " << result.second << "\n";
+            outputStream << "NOT_ENOUGHT_MONEY, change: " 
+                         << result.second << "\n";
             break;
         case CHOISE_STATES::INACCESSIBLE:
             outputStream << "INACCESSIBLE, change: " << result.second << "\n";
@@ -129,7 +130,7 @@ std::pair<CHOISE_STATES, double> Automata::processChoiceResult(
 }
 
 bool Automata::validateOrder(size_t drinkIndex) {
-    if (currentMode == STATES::CHECK) 
+    if (currentMode == STATES::CHECK)
         return currentDeposit >= drinkMenu[drinkIndex].cost;
     return false;
 }
