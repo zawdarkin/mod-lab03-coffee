@@ -116,7 +116,7 @@ std::pair<CHOISE_STATES, double> Automata::processChoiceResult(
             outputStream << "INVALID_ITEM, change: " << result.second << "\n";
             break;
         case CHOISE_STATES::NOT_ENOUGHT_MONEY:
-            outputStream << "NOT_ENOUGHT_MONEY, change: " 
+            outputStream << "NOT_ENOUGHT_MONEY, change: "
                          << result.second << "\n";
             break;
         case CHOISE_STATES::INACCESSIBLE:
