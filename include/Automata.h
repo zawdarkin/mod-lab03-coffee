@@ -42,4 +42,4 @@ class Automata {
     double cancel();
 };
 
-#endif
+#endif  // INCLUDE_AUTOMATA_H_
