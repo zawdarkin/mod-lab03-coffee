@@ -1,16 +1,18 @@
-// Copyright 2022 UNN-IASR
+// Copyright 2023 BeverageTech
 #include <iostream>
 #include "Automata.h"
 
 int main() {
-    Automata automata(std::cout);
-    
-    automata.on();
-    automata.coin(50);
-    automata.choice(2);  // Выбираем Cappuccino
-    automata.coin(10);
-    automata.cancel();
-    automata.off();
-
+    BeverageMachine* coffeeMachine = new BeverageMachine(std::cout);
+    coffeeMachine->powerOn();
+    coffeeMachine->showMenu();
+    coffeeMachine->getCurrentBalance();
+    coffeeMachine->insertMoney(20.0);
+    coffeeMachine->getCurrentBalance();
+    coffeeMachine->getCurrentStatus();
+    coffeeMachine->selectBeverage(2);
+    coffeeMachine->insertMoney(100.0);
+    coffeeMachine->selectBeverage(2);
+    delete coffeeMachine;
     return 0;
 }
