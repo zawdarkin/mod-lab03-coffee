@@ -33,4 +33,4 @@ class Automata {
     void cancel();
 };
 
-#endif  
+#endif 
