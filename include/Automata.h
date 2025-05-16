@@ -1,58 +1,57 @@
-// Copyright 2023 BeverageTech
-#ifndef BEVERAGE_AUTOMATA_H_
-#define BEVERAGE_AUTOMATA_H_
+// Copyright 2022 UNN-IASR
+#ifndef INCLUDE_AUTOMATA_H_
+#define INCLUDE_AUTOMATA_H_
 
 #include <string>
-#include <vector>
 #include <utility>
-#include <ostream>
+#include <vector>
 
-enum class MachineState { 
-    POWER_OFF, 
-    IDLE, 
-    PAYMENT_ACCEPTING, 
-    ORDER_VERIFICATION, 
-    BEVERAGE_PREPARATION 
+enum class STATES {
+    OFF,
+    WAIT,
+    ACCEPT,
+    CHECK,
+    COOK
 };
 
-enum class OrderStatus { 
-    SUCCESS, 
-    INVALID_SELECTION, 
-    INSUFFICIENT_FUNDS, 
-    UNAVAILABLE 
+enum class CHOISE_STATES {
+    OK,
+    INVALID_ITEM,
+    NOT_ENOUGHT_MONEY,
+    INACCESSIBLE
 };
 
-struct BeverageOption {
-    std::string name;
-    double price;
+struct DrinkItem {
+    std::string drinkName;
+    double cost;
 };
 
-class BeverageMachine {
+class Automata {
  private:
-    double totalSales;
-    double currentBalance;
-    std::ostream& output;
-    std::vector<BeverageOption> beverageOptions;
-    MachineState currentStatus;
+    double totalRevenue = 0;
+    double currentDeposit = 0;
+    std::ostream& outputStream;
+    std::vector<DrinkItem> drinkMenu;
+    STATES currentMode = STATES::OFF;
 
-    bool verifyOrder(size_t itemIndex);
-    void startPreparation();
-    void finalizeTransaction();
-    std::pair<OrderStatus, double> processOrderResult(
-        std::pair<OrderStatus, double> result);
+    bool validateOrder(size_t itemIndex);
+    void prepareDrink();
+    void completeService();
+    std::pair<CHOISE_STATES, double> processChoiceResult(
+        std::pair<CHOISE_STATES, double> result);
 
  public:
-    explicit BeverageMachine(std::ostream& os);
-    BeverageMachine(std::ostream& os, std::vector<BeverageOption> customOptions);
+    explicit Automata(std::ostream& os);
+    Automata(std::ostream& os, std::vector<DrinkItem> customMenu);
 
-    void powerOn();
-    void powerOff();
-    void insertMoney(double amount);
-    std::vector<BeverageOption> showMenu();
-    double getCurrentBalance();
-    MachineState getCurrentStatus();
-    std::pair<OrderStatus, double> selectBeverage(size_t beverageIndex);
-    double cancelTransaction();
+    void on();
+    void off();
+    void coin(double amount);
+    std::vector<DrinkItem> getMenu();
+    double getCashe();
+    STATES getState();
+    std::pair<CHOISE_STATES, double> choice(size_t drinkIndex);
+    double cancel();
 };
 
-#endif  // BEVERAGE_AUTOMATA_H_
+#endif  // INCLUDE_AUTOMATA_H_
