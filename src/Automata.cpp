@@ -51,7 +51,8 @@ STATES Automata::getState() {
 
 bool Automata::check(int drink_index) {
     if (state == STATES::ACCEPT && drink_index >= 0 &&
-        drink_index < static_cast<int>(menu.size()) && cash >= prices[drink_index]) {
+        drink_index < static_cast<int>(menu.size()) &&
+        cash >= prices[drink_index]) {
         state = STATES::CHECK;
         return true;
     }
