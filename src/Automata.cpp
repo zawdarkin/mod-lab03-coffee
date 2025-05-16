@@ -3,6 +3,8 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <string>
+#include <vector>
 
 Automata::Automata() : cash(0), state(STATES::OFF) {
     menu = {"Espresso", "Americano", "Cappuccino", "Latte", "Macchiato"};
@@ -48,8 +50,8 @@ STATES Automata::getState() {
 }
 
 bool Automata::check(int drink_index) {
-    if (state == STATES::ACCEPT && drink_index >= 0 && 
-        drink_index < menu.size() && cash >= prices[drink_index]) {
+    if (state == STATES::ACCEPT && drink_index >= 0 &&
+        drink_index < static_cast<int>(menu.size()) && cash >= prices[drink_index]) {
         state = STATES::CHECK;
         return true;
     }
