@@ -3,7 +3,7 @@
 #include "Automata.h"
 
 int main() {
-    BeverageMachine* coffeeMachine = new BeverageMachine(std::cout);
+    Automata* coffeeMachine = new Automata(std::cout);
     coffeeMachine->powerOn();
     coffeeMachine->showMenu();
     coffeeMachine->getCurrentBalance();
