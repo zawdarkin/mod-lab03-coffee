@@ -4,7 +4,7 @@
 
 int main() {
     Automata automata(std::cout);
-
+    
     automata.on();
     automata.coin(50);
     automata.choice(2);  // Выбираем Cappuccino
