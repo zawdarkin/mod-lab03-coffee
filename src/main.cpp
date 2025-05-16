@@ -1,18 +1,16 @@
 // Copyright 2022 UNN-IASR
 #include <iostream>
-
 #include "Automata.h"
 
 int main() {
-  Automata* automata = new Automata(std::cout);
-  automata->on();
-  automata->getMenu();
-  automata->getCashe();
-  automata->coin(20);
-  automata->getCashe();
-  automata->getState();
-  automata->choice(2);
-  automata->coin(100);
-  automata->choice(2);
-  return 0;
+    Automata automata(std::cout);
+    
+    automata.on();
+    automata.coin(50);
+    automata.choice(2); 
+    automata.coin(10);
+    automata.cancel();
+    automata.off();
+
+    return 0;
 }
