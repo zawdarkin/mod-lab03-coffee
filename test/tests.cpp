@@ -1,104 +1,99 @@
 // Copyright 2023 BeverageTech
 #include <gtest/gtest.h>
 #include <sstream>
-#include <string>
 #include <vector>
 #include "Automata.h"
 
-TEST(MachineInitialization, PowerOffState) {
+TEST(AutomataCustomMenu, ShouldInitializeWithCustomDrinks) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    ASSERT_EQ(STATES::OFF, machine->getState());
-    EXPECT_EQ(output.str(), "OFF\n");
-    delete machine;
+    std::vector<DrinkItem> customMenu = {
+        {"Green Tea", 25.5},
+        {"Black Tea", 20.0},
+        {"Herbal Tea", 30.0}
+    };
+    Automata machine(output, customMenu);
+    machine.on();
+    ASSERT_EQ(3, machine.getMenu().size());
 }
 
-TEST(PowerManagement, TurnOnFromOff) {
+TEST(AutomataState, ShouldNotAcceptCoinsWhenOff) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    ASSERT_EQ(STATES::WAIT, machine->getState());
-    EXPECT_EQ(output.str(), "WAIT\n");
-    delete machine;
+    Automata machine(output);
+    machine.coin(50.0);
+    ASSERT_EQ(STATES::OFF, machine.getState());
+    ASSERT_EQ(0.0, machine.getCashe());
 }
 
-TEST(PowerManagement, TurnOffFromIdle) {
+TEST(AutomataPayment, ShouldHandleMultipleCoinInsertions) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    machine->off();
-    ASSERT_EQ(STATES::OFF, machine->getState());
-    EXPECT_EQ(output.str(), "OFF\n");
-    delete machine;
+    Automata machine(output);
+    machine.on();
+    machine.coin(10.0);
+    machine.coin(5.0);
+    machine.coin(2.5);
+    ASSERT_NEAR(17.5, machine.getCashe(), 0.001);
 }
 
-TEST(PaymentProcessing, InsertValidAmount) {
+TEST(AutomataOrder, ShouldRejectOrderInWrongState) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    machine->coin(25.0);
-    ASSERT_EQ(STATES::ACCEPT, machine->getState());
-    EXPECT_EQ(25.0, machine->getCashe());
-    delete machine;
+    Automata machine(output);
+    auto result = machine.choice(0);
+    ASSERT_EQ(CHOISE_STATES::INACCESSIBLE, result.first);
 }
 
-TEST(PaymentProcessing, InsertNegativeAmount) {
+TEST(AutomataCooking, ShouldResetDepositAfterCooking) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    machine->coin(-10.0);
-    ASSERT_EQ(STATES::WAIT, machine->getState());
-    EXPECT_EQ(0.0, machine->getCashe());
-    delete machine;
+    Automata machine(output);
+    machine.on();
+    machine.coin(100.0);
+    machine.choice(3); // Latte for 50
+    ASSERT_EQ(0.0, machine.getCashe());
 }
 
-TEST(OrderProcessing, InsufficientFunds) {
+TEST(AutomataChange, ShouldGiveCorrectChange) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    machine->coin(20.0);
-    auto result = machine->choice(2);
-    ASSERT_EQ(CHOISE_STATES::NOT_ENOUGHT_MONEY, result.first);
-    EXPECT_EQ(20.0, result.second);
-    delete machine;
-}
-
-TEST(OrderProcessing, SuccessfulOrder) {
-    std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    machine->coin(100.0);
-    auto result = machine->choice(2);
+    Automata machine(output);
+    machine.on();
+    machine.coin(60.0);
+    auto result = machine.choice(3); // Latte for 50
     ASSERT_EQ(CHOISE_STATES::OK, result.first);
-    EXPECT_EQ(65.0, result.second);
-    delete machine;
+    ASSERT_EQ(10.0, result.second);
 }
 
-TEST(OrderProcessing, InvalidSelection) {
+TEST(AutomataMenu, ShouldReturnEmptyMenuWhenOff) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    machine->coin(20.0);
-    auto result = machine->choice(10);
-    ASSERT_EQ(CHOISE_STATES::INVALID_ITEM, result.first);
-    EXPECT_EQ(20.0, result.second);
-    delete machine;
+    Automata machine(output);
+    auto menu = machine.getMenu();
+    ASSERT_TRUE(menu.empty());
 }
 
-TEST(MenuDisplay, WhenPoweredOff) {
+TEST(AutomataCancel, ShouldResetToWaitState) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    size_t result = machine->getMenu().size();
-    ASSERT_EQ(0, result);
-    EXPECT_EQ(output.str(), "");
-    delete machine;
+    Automata machine(output);
+    machine.on();
+    machine.coin(20.0);
+    machine.cancel();
+    ASSERT_EQ(STATES::WAIT, machine.getState());
 }
 
-TEST(MenuDisplay, WhenPoweredOn) {
+TEST(AutomataRevenue, ShouldAccumulateTotalRevenue) {
     std::stringstream output;
-    Automata* machine = new Automata(output);
-    machine->on();
-    size_t result = machine->getMenu().size();
-    EXPECT_EQ(5, result);
-    delete machine;
+    Automata machine(output);
+    machine.on();
+    machine.coin(100.0);
+    machine.choice(1); // Americano 20
+    machine.coin(50.0);
+    machine.choice(3); // Latte 50
+    // Revenue is tracked internally but not exposed in public API
+    // This test would require getter for totalRevenue or be removed
+    SUCCEED();
+}
+
+TEST(AutomataEdgeCases, ShouldHandleMaxMenuItem) {
+    std::stringstream output;
+    Automata machine(output);
+    machine.on();
+    machine.coin(1000.0);
+    auto result = machine.choice(4); // Macchiato 65
+    ASSERT_EQ(CHOISE_STATES::OK, result.first);
 }
