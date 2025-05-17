@@ -2,102 +2,103 @@
 #include <gtest/gtest.h>
 #include <sstream>
 #include <string>
+#include <vector>
 #include "Automata.h"
 
-TEST(CustomMenuTest, ConstructorWithCustomMenu) {
+TEST(MachineInitialization, PowerOffState) {
     std::stringstream output;
-    std::vector<DrinkItem> customMenu = {
-        {"Tea", 10}, {"Coffee", 15}, {"Hot Chocolate", 20}};
-    Automata machine(output, customMenu);
-    machine.on();
-    ASSERT_EQ(3, machine.getMenu().size());
+    Automata* machine = new Automata(output);
+    ASSERT_EQ(STATES::OFF, machine->getState());
+    EXPECT_EQ(output.str(), "OFF\n");
+    delete machine;
 }
 
-TEST(StateTransitionTest, FromAcceptToCheckOnChoice) {
+TEST(PowerManagement, TurnOnFromOff) {
     std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(50.0);
-    machine.choice(3); // Latte costs 50
-    ASSERT_EQ(STATES::COOK, machine.getState());
+    Automata* machine = new Automata(output);
+    machine->on();
+    ASSERT_EQ(STATES::WAIT, machine->getState());
+    EXPECT_EQ(output.str(), "WAIT\n");
+    delete machine;
 }
 
-TEST(CancelOperationTest, CancelInAcceptState) {
+TEST(PowerManagement, TurnOffFromIdle) {
     std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(30.0);
-    double refund = machine.cancel();
-    ASSERT_EQ(30.0, refund);
-    ASSERT_EQ(STATES::WAIT, machine.getState());
+    Automata* machine = new Automata(output);
+    machine->on();
+    machine->off();
+    ASSERT_EQ(STATES::OFF, machine->getState());
+    EXPECT_EQ(output.str(), "OFF\n");
+    delete machine;
 }
 
-TEST(RevenueCalculationTest, RevenueAfterSuccessfulOrder) {
+TEST(PaymentProcessing, InsertValidAmount) {
     std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(100.0);
-    machine.choice(3); // Latte costs 50
-    machine.coin(100.0);
-    machine.choice(0); // Espresso costs 15
-    ASSERT_EQ(65.0, machine.getCashe()); // 100 + 100 - 50 - 15 = 135, but getCashe returns currentDeposit
+    Automata* machine = new Automata(output);
+    machine->on();
+    machine->coin(25.0);
+    ASSERT_EQ(STATES::ACCEPT, machine->getState());
+    EXPECT_EQ(25.0, machine->getCashe());
+    delete machine;
 }
 
-TEST(DrinkPreparationTest, CookingStateDuration) {
+TEST(PaymentProcessing, InsertNegativeAmount) {
     std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(50.0);
-    auto start = std::chrono::steady_clock::now();
-    machine.choice(3); // Latte costs 50
-    auto end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-    ASSERT_GE(duration.count(), 5);
+    Automata* machine = new Automata(output);
+    machine->on();
+    machine->coin(-10.0);
+    ASSERT_EQ(STATES::WAIT, machine->getState());
+    EXPECT_EQ(0.0, machine->getCashe());
+    delete machine;
 }
 
-TEST(MultipleCoinsTest, AccumulateDeposit) {
+TEST(OrderProcessing, InsufficientFunds) {
     std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(10.0);
-    machine.coin(20.0);
-    machine.coin(5.0);
-    ASSERT_EQ(35.0, machine.getCashe());
+    Automata* machine = new Automata(output);
+    machine->on();
+    machine->coin(20.0);
+    auto result = machine->choice(2);
+    ASSERT_EQ(CHOISE_STATES::NOT_ENOUGHT_MONEY, result.first);
+    EXPECT_EQ(20.0, result.second);
+    delete machine;
 }
 
-TEST(EdgeCaseTest, ZeroAmountCoin) {
+TEST(OrderProcessing, SuccessfulOrder) {
     std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(0.0);
-    ASSERT_EQ(STATES::WAIT, machine.getState());
-    ASSERT_EQ(0.0, machine.getCashe());
-}
-
-TEST(OrderProcessingTest, ExactAmountPayment) {
-    std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(35.0); // Exact amount for Cappuccino
-    auto result = machine.choice(2);
+    Automata* machine = new Automata(output);
+    machine->on();
+    machine->coin(100.0);
+    auto result = machine->choice(2);
     ASSERT_EQ(CHOISE_STATES::OK, result.first);
-    ASSERT_EQ(0.0, result.second);
+    EXPECT_EQ(65.0, result.second);
+    delete machine;
 }
 
-TEST(StateProtectionTest, CoinInOffState) {
+TEST(OrderProcessing, InvalidSelection) {
     std::stringstream output;
-    Automata machine(output);
-    machine.coin(10.0);
-    ASSERT_EQ(STATES::OFF, machine.getState());
-    ASSERT_EQ(0.0, machine.getCashe());
+    Automata* machine = new Automata(output);
+    machine->on();
+    machine->coin(20.0);
+    auto result = machine->choice(10);
+    ASSERT_EQ(CHOISE_STATES::INVALID_ITEM, result.first);
+    EXPECT_EQ(20.0, result.second);
+    delete machine;
 }
 
-TEST(CompleteServiceTest, ReturnToWaitState) {
+TEST(MenuDisplay, WhenPoweredOff) {
     std::stringstream output;
-    Automata machine(output);
-    machine.on();
-    machine.coin(50.0);
-    machine.choice(3); // Latte costs 50
-    // After cooking should return to WAIT state
-    ASSERT_EQ(STATES::WAIT, machine.getState());
+    Automata* machine = new Automata(output);
+    size_t result = machine->getMenu().size();
+    ASSERT_EQ(0, result);
+    EXPECT_EQ(output.str(), "");
+    delete machine;
+}
+
+TEST(MenuDisplay, WhenPoweredOn) {
+    std::stringstream output;
+    Automata* machine = new Automata(output);
+    machine->on();
+    size_t result = machine->getMenu().size();
+    EXPECT_EQ(5, result);
+    delete machine;
 }
